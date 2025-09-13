@@ -19,7 +19,8 @@ const registerUser = asyncHandler( async (req, res) => {
     // get user details from the frontend
     const {username, email, password, fullName} = req.body;
     console.log("email:", email);
-
+    console.log(req.body);
+    
     // validation, not empty and others
     if (
         [username, email, password, fullName].some( (field) => field?.trim() === "") 
@@ -31,7 +32,7 @@ const registerUser = asyncHandler( async (req, res) => {
     }
 
     // check if user already exist, username, email
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or: [ {username}, {email}]
     })
 
@@ -41,8 +42,14 @@ const registerUser = asyncHandler( async (req, res) => {
 
     // check for images, avatar
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    // const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage) 
+    && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path;
+    }
+    
     if (!avatarLocalPath) {
         throw new ApiError(400, "avatar file is required")
     }
@@ -66,7 +73,7 @@ const registerUser = asyncHandler( async (req, res) => {
     })
 
     // remove password and refresh token field from response
-    const createdUser = User.findById(user._id).select(
+    const createdUser = await User.findById(user._id).select(
         "-password -refreshToken"
     )
 
@@ -79,7 +86,7 @@ const registerUser = asyncHandler( async (req, res) => {
     return res.status(201).json(
         new ApiResponse(200, createdUser, "user registered successfully")
     )
-
+    
 })
 
 export {registerUser}
